@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>game jelek doang kok kak 🐍</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #111827, #064e3b);
+      min-height: 100vh; display: flex; justify-content: center; align-items: center;
+      color: white; overflow: hidden;
+    }
+    .game { width: min(94vw, 430px); text-align: center; }
+    h1 { font-size: 32px; margin-bottom: 8px; }
+    .score { font-size: 20px; margin-bottom: 12px; font-weight: bold; }
+    canvas {
+      width: 100%; aspect-ratio: 1 / 1; background: #020617;
+      border: 4px solid #22c55e; border-radius: 14px; display: block;
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
+    }
+    .message { margin-top: 12px; min-height: 55px; font-weight: bold; font-size: 18px; }
+    .game-over {
+      font-size: 34px; font-weight: bold; display: inline-block;
+      animation: goyang 0.4s infinite alternate;
+    }
+    @keyframes goyang {
+      from { transform: rotate(-4deg) scale(1); }
+      to { transform: rotate(4deg) scale(1.08); }
+    }
+    .controls {
+      margin: 10px auto 0; display: grid;
+      grid-template-columns: 70px 70px 70px; grid-template-rows: 55px 55px;
+      gap: 10px; justify-content: center;
+    }
+    button {
+      border: none; color: white; background: #16a34a; font-size: 25px;
+      font-weight: bold; border-radius: 14px; width: 70px; height: 55px;
+      box-shadow: 0 4px 0 #166534; touch-action: manipulation;
+    }
+    button:active { transform: translateY(3px); box-shadow: 0 1px 0 #166534; }
+    .up { grid-column: 2; grid-row: 1; }
+    .left { grid-column: 1; grid-row: 2; }
+    .down { grid-column: 2; grid-row: 2; }
+    .right { grid-column: 3; grid-row: 2; }
+    .restart {
+      margin-top: 18px; width: 180px; height: 48px; font-size: 17px;
+      background: #2563eb; box-shadow: 0 4px 0 #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <h1>🐍 Snake Game</h1>
+    <div class="score">Skor: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="message" id="message">🎮 SELAMAT BERMAIN! 🐍</div>
+
+    <div class="controls">
+      <button class="up" onclick="changeDirection('up')">⬆️</button>
+      <button class="left" onclick="changeDirection('left')">⬅️</button>
+      <button class="down" onclick="changeDirection('down')">⬇️</button>
+      <button class="right" onclick="changeDirection('right')">➡️</button>
+    </div>
+
+    <button class="restart" onclick="restartGame()">🔄 Mulai Ulang</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const box = 20;
+    const totalBoxes = canvas.width / box;
+
+    let snake, food, direction, nextDirection, score, gameOver, gameLoop;
+
+    function startGame() {
+      snake = [
+        { x: 10 * box, y: 10 * box },
+        { x: 9 * box, y: 10 * box },
+        { x: 8 * box, y: 10 * box }
+      ];
+
+      food = createFood();
+      direction = "right";
+      nextDirection = "right";
+      score = 0;
+      gameOver = false;
+
+      document.getElementById("score").textContent = score;
+      document.getElementById("message").innerHTML = "🎮 SELAMAT BERMAIN! 🐍";
+
+      clearInterval(gameLoop);
+      gameLoop = setInterval(updateGame, 220);
+      draw();
+    }
+
+    function createFood() {
+      let newFood;
+      do {
+        newFood = {
+          x: Math.floor(Math.random() * totalBoxes) * box,
+          y: Math.floor(Math.random() * totalBoxes) * box
+        };
+      } while (snake && snake.some(part => part.x === newFood.x && part.y === newFood.y));
+      return newFood;
+    }
+
+    function updateGame() {
+      if (gameOver) return;
+      direction = nextDirection;
+
+      let head = { x: snake[0].x, y: snake[0].y };
+
+      if (direction === "up") head.y -= box;
+      if (direction === "down") head.y += box;
+      if (direction === "left") head.x -= box;
+      if (direction === "right") head.x += box;
+
+      if (head.x < 0 || head.y < 0 || head.x >= canvas.width || head.y >= canvas.height) {
+        endGame();
+        return;
+      }
+
+      if (snake.some(part => part.x === head.x && part.y === head.y)) {
+        endGame();
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        document.getElementById("score").textContent = score;
+        food = createFood();
+      } else {
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    function draw() {
+      ctx.fillStyle = "#020617";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= canvas.width; i += box) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath();
+      ctx.arc(food.x + box / 2, food.y + box / 2, box / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      const colors = [
+        "#ff0000", "#ff7a00", "#ffff00", "#00ff00",
+        "#00ffff", "#0080ff", "#8000ff", "#ff00ff"
+      ];
+
+      snake.forEach((part, index) => {
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(part.x + 1, part.y + 1, box - 2, box - 2);
+      });
+
+      const head = snake[0];
+      ctx.fillStyle = "#020617";
+
+      if (direction === "right") {
+        ctx.fillRect(head.x + 13, head.y + 5, 3, 3);
+        ctx.fillRect(head.x + 13, head.y + 12, 3, 3);
+      }
+
+      if (direction === "left") {
+        ctx.fillRect(head.x + 4, head.y + 5, 3, 3);
+        ctx.fillRect(head.x + 4, head.y + 12, 3, 3);
+      }
+
+      if (direction === "up") {
+        ctx.fillRect(head.x + 5, head.y + 4, 3, 3);
+        ctx.fillRect(head.x + 12, head.y + 4, 3, 3);
+      }
+
+      if (direction === "down") {
+        ctx.fillRect(head.x + 5, head.y + 13, 3, 3);
+        ctx.fillRect(head.x + 12, head.y + 13, 3, 3);
+      }
+    }
+
+    function changeDirection(newDirection) {
+      if (gameOver) return;
+
+      if (newDirection === "up" && direction !== "down") nextDirection = "up";
+      if (newDirection === "down" && direction !== "up") nextDirection = "down";
+      if (newDirection === "left" && direction !== "right") nextDirection = "left";
+      if (newDirection === "right" && direction !== "left") nextDirection = "right";
+    }
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "ArrowUp") changeDirection("up");
+      if (event.key === "ArrowDown") changeDirection("down");
+      if (event.key === "ArrowLeft") changeDirection("left");
+      if (event.key === "ArrowRight") changeDirection("right");
+    });
+
+    function endGame() {
+      gameOver = true;
+      clearInterval(gameLoop);
+      document.getElementById("message").innerHTML =
+        "<span class='game-over'>YAHAHA CUPUU BELAJAR LAGI DEKK 😂</span><br>" +
+        "Skor kamu: " + score;
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    startGame();
+  </script>
+</body>
+</html>
